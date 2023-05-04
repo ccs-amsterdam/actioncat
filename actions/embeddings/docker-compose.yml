@@ -1,0 +1,19 @@
+version: "3.8"
+services:
+  action-dfm:
+    image: ccsamsterdam/amcat-action-embeddings:4.0.13
+    build: .
+    network_mode: "host"    
+    environment: # behaviour of the R script is controlled through these variables
+      - amcat4_host=http://localhost/amcat
+      - index=state_of_the_union
+      - text_field=text
+      - vector_field=vector
+      - spacy_model=en_core_web_md
+      ## Optionally only apply to some documents
+      # - queries="america"
+      # - "filters={\"party\": \"Republican\"}"
+    # for authentication, this container needs access to the httr2 cache directory. 
+    # You can find it from Python with `__import__('appdirs').user_cache_dir("amcat4py")`
+    # volumes:
+    #   - ~/.cache/httr2:/root/.cache/httr2 # [local path]:[container path]

@@ -1,0 +1,185 @@
+---
+title: "actioncat"
+format: gfm
+execute:
+  eval: false
+---
+
+`actioncat` is part of the AmCAT-suite of packages for text analysis.
+It provides users with the ability to preprocess texts using the Docker infrastructure.
+This allows users to write preprocessing chains, test them locally and then execute the processing steps on a server that has access to an index on an AmCAT instance.
+`actioncat` makes it possible to rerun processing regularly (e.g., once a day and when new data is found) or to ask admins of an index to run preprocessing on text data that the original user does not have access to -- extending the non-consumptive research capabilities of amcat4.
+
+# Workflow Examples
+
+We offer two example *actions* (which is what we call predefined workflows that are packaged in a Docker image/container), one in `R`, one in `Python`:
+
+- The `R` action adds a tidy document-feature representation field to the index
+- The `Python` action adds a document embeddings field to the index
+
+Both of these actions are destructive preprocessing in the sense that the original text cannot be reconstructed from the new field.
+This makes these actions well suited for indexes where the full text can not be shared because of copyright, privacy or other concerns.
+Using AmCAT's fine grained access control features, the full text can be hidden from users without specific permissions, but the preprocessed data can still be shared with a wider audience.
+
+# Usage
+
+Usage for `R` and `Python` is slightly different, but the sections below are written so you only need to read the one you're interested in (you can skip the other one).
+
+## R Action Example: Tidy Document-Features
+
+First, spin up an instance of the AmCAT suite using [Docker](https://docs.docker.com/engine/install/) and [Docker Compose](https://docs.docker.com/compose/install/) if you haven't already (you can find a more detailed explanations in the [AmCAT manual](https://amcat.nl/book/02._getting-started.html)):
+
+```{bash}
+# download our docker compose file with curl or manually
+curl -O https://raw.githubusercontent.com/ccs-amsterdam/actioncat/main/actions/dfm/docker-compose.yml
+# run docker compose to download and start the AmCAT applications
+docker-compose up --pull="missing" -d
+# create a test index to use in this example
+docker exec -it amcat4 amcat4 create-test-index
+```
+
+You can use the actions with the same basic approach:
+
+```{bash}
+# download our docker compose file with curl or manually
+curl -O https://raw.githubusercontent.com/ccs-amsterdam/amcat4docker/main/docker-compose.yml
+# run docker compose to download and start the AmCAT applications
+docker-compose up --pull="missing" -d
+```
+
+The container will run until it has added a tidy document-feature representation to all texts in the test index.
+You can check this via the web interface at <http://localhost/>:
+
+![](media/dfm.png)
+
+or using the `amcat4r` package:
+
+```{r}
+#| eval: true
+#| message: false
+if (!requireNamespace("amcat4r", quietly = TRUE)) remotes::install_github("ccs-amsterdam/amcat4r")
+library(amcat4r)
+amcat_login("http://localhost/amcat")
+sotu_dfm <- query_documents(index = "state_of_the_union", queries = NULL, fields = c(".id", "dfm"))
+sotu_dfm
+```
+
+You can control which AmCAT instance this is used on, which index it is applied on, the name of the text field and the name of the new dfm field by changing the environment variables in the file `docker-compose.yml` in `actions/dfm`:
+
+```{r}
+#| echo: false
+#| eval: true
+compose <- readLines("actions/dfm/docker-compose.yml", warn = FALSE)
+knitr::asis_output(paste0(c("```", compose, "```"), collapse = "\n"))
+```
+
+So far, we ran this on an instance without authentication.
+If we [turn on authentication](https://amcat.nl/book/04._sharing.html), we need to also give the container access to a valid token.
+You can do this by giving the action access to your token file.
+To create a token file, first log into the instance:
+
+```{r}
+amcat_login("http://localhost/amcat", cache = 1L)
+```
+
+When `cache = 1L` is selected, a token file is written to your local computer.
+You can find it by following the path returned by:
+
+```{r}
+#| eval: true
+rappdirs::user_cache_dir("httr2")
+```
+
+Now you could link this directory to the Docker container by changing the commented out lines in `docker-compose.yml` to:
+
+```
+    volumes:
+      - ~/.cache/httr2:/root/.cache/httr2 # [local path]:[container path]
+```
+
+Note that the path returned by `rappdirs::user_cache_dir("httr2")` is the local path and is added before the `:`.
+If the action is run on a server (which is probably your use case), you first need to copy the token there (e.g., copy it to `/srv/amcat/token` and then link this folder to `/root/.cache/httr2` in the container)..
+
+## Python Action Example: Text Embeddings With `spaCy`
+
+First, spin up an instance of the AmCAT suite using [Docker](https://docs.docker.com/engine/install/) and [Docker Compose](https://docs.docker.com/compose/install/) if you haven't already (you can find a more detailed explanations in the [AmCAT manual](https://amcat.nl/book/02._getting-started.html)):
+
+```{bash}
+# download our docker compose file with curl or manually
+curl -O https://raw.githubusercontent.com/ccs-amsterdam/amcat4docker/main/docker-compose.yml
+# run docker compose to download and start the AmCAT applications
+docker-compose up --pull="missing" -d
+# create a test index to use in this example
+docker exec -it amcat4 amcat4 create-test-index
+```
+
+You can use the actions with the same basic approach:
+
+```{bash}
+# download our docker compose file with curl or manually
+curl -O https://raw.githubusercontent.com/ccs-amsterdam/actioncat/main/actions/embeddings/docker-compose.yml
+# run docker compose to download and start the AmCAT applications
+docker-compose up --pull="missing" -d
+```
+
+The container will run until it has added a document embedding to all texts in the test index.
+You can check this via the web interface at <http://localhost/>:
+
+![](media/embedding.png)
+
+or using the `amcat4py` package:
+
+```{python}
+#| eval: true
+#| message: false
+# !pip install git+https://github.com/ccs-amsterdam/amcat4py
+from amcat4py import AmcatClient
+amcat = AmcatClient("http://localhost/amcat")
+sotu_embedded = list(amcat.query("state_of_the_union", fields=["_id", "vector"]))
+print(sotu_embedded[0])
+```
+
+You can control which AmCAT instance this is used on, which index it is applied on, the name of the text field and the name of the new field with word embeddings by changing the environment variables in the file `docker-compose.yml` in `actions/dfm`:
+
+```{r}
+#| echo: false
+#| eval: true
+compose <- readLines("actions/embeddings/docker-compose.yml", warn = FALSE)
+knitr::asis_output(paste0(c("```", compose, "```"), collapse = "\n"))
+```
+
+So far, we ran this on an instance without authentication.
+If we [turn on authentication](https://amcat.nl/book/04._sharing.html), we need to also give the container access to a valid token.
+You can do this by giving the action access to your token file.
+To create a token file, first log into the instance:
+
+```{python}
+AmcatClient("http://localhost/amcat")
+```
+
+When this was successful, a token file is written to your local computer.
+You can find it by following the path returned by:
+
+```{python}
+#| eval: true
+from appdirs import user_cache_dir
+user_cache_dir("amcat4py")
+```
+
+Now you could link this directory to the Docker container by changing the commented out lines in `docker-compose.yml` to:
+
+```
+    volumes:
+      - /home/johannes/.cache/amcat4py:/root/.cache/amcat4py # [local path]:[container path]
+```
+
+Note that the path returned by `user_cache_dir("amcat4py")` is the local path and is added before the `:`.
+If the action is run on a server (which is probably your use case), you first need to copy the token there (e.g., copy it to `/srv/amcat/token` and then link this folder to `/root/.cache/amcat4py` in the container).
+
+# For Non-Consumptive Research
+
+The actions here should be seen as templates for other workflows.
+This way, users without access to the full data on an AmCAT server can still perform computational analysis.
+They can write and test a new action locally, following the steps above with a small sample or fabricated data, and then ask the administrator of the AmCAT instance to run the action with their token.
+This way, the administrator can check the action first to see if the newly created field(s) reveal any data that is meant to be hidden.
+Compared to sending just `R` or `Python` files for processing, the shown approach has the advantage that the action will have all the right dependencies already and perform the action exactly as on the user's machine (therby standardizing the process to a certain degree and making the admins life a little easier).

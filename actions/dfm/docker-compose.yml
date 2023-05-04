@@ -1,0 +1,16 @@
+version: "3.8"
+services:
+  action-dfm:
+    image: ccsamsterdam/amcat-action-dfm:4.0.13
+    build: .
+    network_mode: "host"    
+    environment: # behaviour of the R script is controlled through these variables
+      - amcat4_host=http://localhost/amcat
+      - index=state_of_the_union
+      - queries=NULL
+      - text_field=text
+      - dfm_field=dfm
+    # for authentication, this container needs access to the httr2 cache directory. 
+    # You can find it with `rappdirs::user_cache_dir("httr2")`
+    # volumes:
+    #   - ~/.cache/httr2:/root/.cache/httr2 # [local path]:[container path]
