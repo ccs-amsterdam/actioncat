@@ -44,7 +44,7 @@ manual](https://amcat.nl/book/02._getting-started.html)):
 
 ``` bash
 # download our docker compose file with curl or manually
-curl -O https://raw.githubusercontent.com/ccs-amsterdam/actioncat/main/actions/dfm/docker-compose.yml
+curl -O https://raw.githubusercontent.com/ccs-amsterdam/amcat4docker/main/docker-compose.yml
 # run docker compose to download and start the AmCAT applications
 docker-compose up --pull="missing" -d
 # create a test index to use in this example
@@ -54,8 +54,8 @@ docker exec -it amcat4 amcat4 create-test-index
 You can use the actions with the same basic approach:
 
 ``` bash
-# download our docker compose file with curl or manually
-curl -O https://raw.githubusercontent.com/ccs-amsterdam/amcat4docker/main/docker-compose.yml
+# download the action file with curl or manually
+curl -O https://raw.githubusercontent.com/ccs-amsterdam/actioncat/main/actions/dfm/docker-compose.yml
 # run docker compose to download and start the AmCAT applications
 docker-compose up --pull="missing" -d
 ```
