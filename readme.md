@@ -10,6 +10,22 @@ found) or to ask admins of an index to run preprocessing on text data
 that the original user does not have access to – extending the
 non-consumptive research capabilities of amcat4.
 
+# Design
+
+At the core of `actioncat` are *actions*, which is what we call predefined workflows.
+You can create these workflows to, for example, add new documents to your AmCAT instance, process them, add annotation or whatever else you want.
+Or you can use a predefined workflow that we or someone else has created.
+You can then run these actions on a server running actioncat through the API (e.g., by using the web interface, R or Python package).
+
+![architecture](media/architecture.svg)
+
+`actioncat` distributes the action between different workers (kittens) that each process part of the queue (you can also just spawn one kitten if that is enough).
+The kittens send the processed data back to a field in an AmCAT (that the user has defined in the action).
+The `actioncat` RESTServer holds the current queue (bowl) which is eaten as the kittens feed on the action.
+Users can query the status of the queue from the `actioncat` RESTServer.
+
+Authentication is reused from `amcat4r` or `amcat4py` when the action is sent through R or Python package.
+
 # Workflow Examples
 
 We offer two example *actions* (which is what we call predefined

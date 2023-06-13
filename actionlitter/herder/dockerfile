@@ -1,0 +1,16 @@
+FROM python:3.10.9-alpine3.17
+
+RUN apk add docker docker-cli-compose
+
+COPY . .
+
+RUN pip install .
+
+
+ENV UVICORN_HOST "0.0.0.0"
+ENV UVICORN_PORT 8000
+
+EXPOSE 8000
+
+# Run npm start script when container starts
+CMD ["uvicorn", "api:app", "--reload"]
