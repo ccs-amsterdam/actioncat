@@ -1,0 +1,6 @@
+huggingface_hub==0.19.4
+matplotlib==3.8.2
+numpy==1.26.2
+torch==2.1.1
+transformers==4.35.2
+git+https://github.com/ccs-amsterdam/amcat4py
